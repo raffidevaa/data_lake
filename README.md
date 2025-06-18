@@ -1,6 +1,10 @@
-WORKFLOW
+# DATA LAKEHOUSE WORKFLOW
 
-source → raw → structured → staging → star → warehouse
+
+<img width="2451" alt="data lake workflow" src="https://github.com/user-attachments/assets/6a8b8c65-4c7c-4abf-a470-fb0e6336bc86" />
+
+
+
 
 1. input file di source folder
 2. organize.py untuk mengorganisasikan file untuk masuk ke dalam folder raw kemudian dimasukkan sesuai dengan type file(dalam raw ada folder txt, csv dan pdf)
