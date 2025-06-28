@@ -10,8 +10,8 @@ def main():
     source_folder = 'source_files'
     raw_folder = 'raw'
 
-    # print("[INFO] Organizing files...")
-    # organize_files_by_type(source_folder, raw_folder)
+    print("[INFO] Organizing files...")
+    organize_files_by_type(source_folder, raw_folder)
 
     # print("[INFO] Analyzing files...")
     # analyze_txt('raw/txt')
@@ -30,8 +30,8 @@ def main():
     # transform_pdf()
 
     
-    print("[INFO] Loading data to data warehouse")
-    passtodw()
+    # print("[INFO] Loading data to data warehouse")
+    # passtodw()
 
 if __name__ == "__main__":
     main()

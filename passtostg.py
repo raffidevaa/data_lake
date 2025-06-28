@@ -1,10 +1,9 @@
-# passtostg.py
-
 import os
 import pandas as pd
 from collections import Counter
 from config.db_config import get_staging_engine
 from sqlalchemy import text
+from datetime import datetime
 
 def load_txt_to_staging(structured_txt_path="structured/txt/words_freq.csv"):
     if not os.path.exists(structured_txt_path):
@@ -16,8 +15,9 @@ def load_txt_to_staging(structured_txt_path="structured/txt/words_freq.csv"):
         print("[WARNING] File kosong, tidak ada data yang dimuat.")
         return
 
-    # Tambahkan kolom tambahan
-    # df["source"] = "X"
+    df["source"] = "X"
+
+    df["insert_at"] = datetime.now()
 
     engine = get_staging_engine()
     with engine.begin() as conn:
@@ -27,13 +27,15 @@ def load_txt_to_staging(structured_txt_path="structured/txt/words_freq.csv"):
                 id SERIAL PRIMARY KEY,
                 word TEXT,
                 frequency INT,
-                source TEXT
+                source TEXT,
+                insert_at TIMESTAMP
             );
         """))
 
-        df.to_sql("words_stg", engine, schema="txt_stg", if_exists="replace", index=False)
-        print(f"[INFO] Berhasil dimuat ke staging DB ({len(df)} baris).")
-        
+    df.to_sql("words_stg", engine, schema="txt_stg", if_exists="replace", index=False)
+    print(f"[INFO] Berhasil dimuat ke staging DB ({len(df)} baris).")
+
+
 def load_csv_to_staging(input_folder="structured/csv"):
     engine = get_staging_engine()
 
@@ -43,8 +45,19 @@ def load_csv_to_staging(input_folder="structured/csv"):
             print(f"[INFO] Loading file: {file_path}")
 
             df = pd.read_csv(file_path)
+            df["insert_at"] = datetime.now()
 
-            # Load ke staging (append data)
+            with engine.begin() as conn:
+                conn.execute(text("""
+                    CREATE SCHEMA IF NOT EXISTS csv_stg;
+                    CREATE TABLE IF NOT EXISTS csv_stg.temp_sensor_stg (
+                        id SERIAL PRIMARY KEY,
+                        timestamp TIMESTAMP,
+                        value NUMERIC,
+                        insert_at TIMESTAMP
+                    );
+                """))
+
             df.to_sql(
                 name="temp_sensor_stg",
                 con=engine,
@@ -59,27 +72,23 @@ def load_csv_to_staging(input_folder="structured/csv"):
 def load_pdf_to_staging():
     engine = get_staging_engine()
 
-    # Baca file structured hasil analyze_pdf
     input_file = "structured/pdf/structured_revenue.csv"
     df = pd.read_csv(input_file)
-
-    # Pastikan kolom date dalam format date
     df['report_date'] = pd.to_datetime(df['report_date']).dt.date
+    df["insert_at"] = datetime.now()
 
     with engine.begin() as conn:
-        # Pastikan schema dan tabel sudah ada
         conn.execute(text("""
             CREATE SCHEMA IF NOT EXISTS pdf_stg;
-
             CREATE TABLE IF NOT EXISTS pdf_stg.revenue_stg (
                 id SERIAL PRIMARY KEY,
                 company_name TEXT,
                 report_date DATE,
-                revenue NUMERIC
+                revenue NUMERIC,
+                insert_at TIMESTAMP
             );
         """))
 
-    # Load data ke staging
     df.to_sql(
         "revenue_stg",
         con=engine,
